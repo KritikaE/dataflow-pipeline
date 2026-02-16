@@ -51,14 +51,14 @@ def analyze_text(text):
         insights = []
 
         if "error" in text.lower():
-            sentiment = "negative"
-            insights.append("The comment discusses a potential issue or problem.")
+            sentiment = "critical"
+            insights.append("The comment discusses a potential issue or concern.")
         elif "thank" in text.lower() or "great" in text.lower():
-            sentiment = "positive"
+            sentiment = "enthusiastic"
             insights.append("The comment expresses appreciation or positive feedback.")
         else:
-            sentiment = "neutral"
-            insights.append("The comment appears to provide general information.")
+            sentiment = "objective"
+            insights.append("The comment appears informational or neutral in tone.")
 
         insights.append(f"The comment contains {len(text.split())} words.")
         insights.append("This appears to be user-generated feedback.")
@@ -69,6 +69,7 @@ def analyze_text(text):
 
     except Exception as e:
         return None, f"AI Error: {str(e)}"
+
 
 
 # ===== HEALTH CHECK =====
