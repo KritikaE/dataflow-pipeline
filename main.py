@@ -1,13 +1,24 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 import requests
 import sqlite3
 from datetime import datetime
-import os
 
 app = FastAPI()
 
-DB_NAME = "pipeline.db"
+# ✅ IMPORTANT: CORS (Fixes Failed to Fetch)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Use /tmp for Render write access
+DB_NAME = "/tmp/pipeline.db"
+
 
 # ===== INPUT MODEL =====
 class PipelineRequest(BaseModel):
@@ -15,7 +26,7 @@ class PipelineRequest(BaseModel):
     source: str
 
 
-# ===== INITIALIZE DATABASE =====
+# ===== INIT DATABASE =====
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
@@ -34,7 +45,7 @@ def init_db():
 init_db()
 
 
-# ===== MOCK AI ANALYSIS =====
+# ===== MOCK AI =====
 def analyze_text(text):
     try:
         insights = []
@@ -60,19 +71,20 @@ def analyze_text(text):
         return None, f"AI Error: {str(e)}"
 
 
+# ===== HEALTH CHECK =====
 @app.get("/")
 def home():
     return {"message": "Pipeline API is running"}
 
 
-# ===== MAIN PIPELINE ENDPOINT =====
+# ===== MAIN PIPELINE =====
 @app.post("/pipeline")
 def run_pipeline(request: PipelineRequest):
 
     results = []
     errors = []
 
-    # 1️⃣ FETCH DATA
+    # 1️⃣ Fetch Data
     try:
         response = requests.get(
             "https://jsonplaceholder.typicode.com/comments?postId=1",
@@ -83,7 +95,7 @@ def run_pipeline(request: PipelineRequest):
     except Exception as e:
         return {"error": f"API fetch failed: {str(e)}"}
 
-    # 2️⃣ PROCESS EACH ITEM
+    # 2️⃣ Process Each Item
     for item in data:
         try:
             original_text = item.get("body", "")
@@ -96,7 +108,7 @@ def run_pipeline(request: PipelineRequest):
 
             timestamp = datetime.utcnow().isoformat()
 
-            # 3️⃣ STORE IN DATABASE
+            # 3️⃣ Store in DB
             try:
                 conn = sqlite3.connect(DB_NAME)
                 c = conn.cursor()
@@ -122,7 +134,7 @@ def run_pipeline(request: PipelineRequest):
         except Exception as item_error:
             errors.append(f"Item processing error: {str(item_error)}")
 
-    # 4️⃣ MOCK NOTIFICATION
+    # 4️⃣ Mock Notification
     print(f"Notification sent to: {request.email}")
 
     return {
